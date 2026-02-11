@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隨機抽獎</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-group label {
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 80px;
+            padding: 10px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .draw-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 30px;
+        }
+
+        .draw-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .draw-button:active {
+            transform: translateY(0);
+        }
+
+        .draw-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-display {
+            text-align: center;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .result-number {
+            font-size: 5em;
+            font-weight: bold;
+            color: #ff0000;
+            text-shadow: 3px 3px 6px rgba(255, 0, 0, 0.3);
+            animation: popIn 0.5s ease-out;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-top: 8px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            min-height: 60px;
+        }
+
+        .history-number {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #555;
+            border: 2px solid #ddd;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .clear-button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: white;
+            background: #e74c3c;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .clear-button:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 隨機抽獎 🎉</h1>
+        
+        <div class="input-group">
+            <label>範圍：</label>
+            <input type="number" id="minNum" value="1" min="1">
+            <span>~</span>
+            <input type="number" id="maxNum" value="100" min="1">
+        </div>
+
+        <button class="draw-button" id="drawBtn">開始抽獎</button>
+
+        <div class="result-display" id="resultDisplay"></div>
+
+        <div class="history">
+            <h2>已抽出的數字</h2>
+            <div class="history-grid" id="historyGrid"></div>
+            <button class="clear-button" id="clearBtn">清除記錄</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">抽獎中...</div>
+        </div>
+    </div>
+
+    <script>
+        let drawnNumbers = [];
+
+        const minNumInput = document.getElementById('minNum');
+        const maxNumInput = document.getElementById('maxNum');
+        const drawBtn = document.getElementById('drawBtn');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const historyGrid = document.getElementById('historyGrid');
+        const clearBtn = document.getElementById('clearBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        drawBtn.addEventListener('click', startDraw);
+        clearBtn.addEventListener('click', clearHistory);
+
+        function startDraw() {
+            const min = parseInt(minNumInput.value);
+            const max = parseInt(maxNumInput.value);
+
+            if (isNaN(min) || isNaN(max) || min > max) {
+                alert('請輸入有效的數字範圍！');
+                return;
+            }
+
+            const availableNumbers = [];
+            for (let i = min; i <= max; i++) {
+                if (!drawnNumbers.includes(i)) {
+                    availableNumbers.push(i);
+                }
+            }
+
+            if (availableNumbers.length === 0) {
+                alert('所有數字都已抽完！請清除記錄或調整範圍。');
+                return;
+            }
+
+            drawBtn.disabled = true;
+            loadingOverlay.classList.add('active');
+            resultDisplay.innerHTML = '';
+
+            setTimeout(() => {
+                const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                const drawnNumber = availableNumbers[randomIndex];
+                
+                drawnNumbers.push(drawnNumber);
+                
+                loadingOverlay.classList.remove('active');
+                
+                resultDisplay.innerHTML = `<div class="result-number">${drawnNumber}</div>`;
+                
+                addToHistory(drawnNumber);
+                
+                drawBtn.disabled = false;
+            }, 2000);
+        }
+
+        function addToHistory(number) {
+            const numberDiv = document.createElement('div');
+            numberDiv.className = 'history-number';
+            numberDiv.textContent = number;
+            historyGrid.appendChild(numberDiv);
+        }
+
+        function clearHistory() {
+            if (drawnNumbers.length === 0) {
+                return;
+            }
+
+            if (confirm('確定要清除所有記錄嗎？')) {
+                drawnNumbers = [];
+                historyGrid.innerHTML = '';
+                resultDisplay.innerHTML = '';
+            }
+        }
+    </script>
+</body>
+</html>
