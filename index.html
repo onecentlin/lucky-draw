@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>隨機抽獎</title>
+    <title>Lucky Draw</title>
     <style>
         * {
             margin: 0;
@@ -212,23 +212,23 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎉 隨機抽獎 🎉</h1>
-        
+        <h1 id="titleText">🎉 Lucky Draw 🎉</h1>
+
         <div class="input-group">
-            <label>範圍：</label>
+            <label id="rangeLabel">Range:</label>
             <input type="number" id="minNum" value="1" min="1">
             <span>~</span>
             <input type="number" id="maxNum" value="100" min="1">
         </div>
 
-        <button class="draw-button" id="drawBtn">開始抽獎</button>
+        <button class="draw-button" id="drawBtn">Start Draw</button>
 
         <div class="result-display" id="resultDisplay"></div>
 
         <div class="history">
-            <h2>已抽出的數字</h2>
+            <h2 id="historyTitle">Drawn Numbers</h2>
             <div class="history-grid" id="historyGrid"></div>
-            <button class="clear-button" id="clearBtn">清除記錄</button>
+            <button class="clear-button" id="clearBtn">Clear History</button>
         </div>
     </div>
 
@@ -241,6 +241,49 @@
         const resultDisplay = document.getElementById('resultDisplay');
         const historyGrid = document.getElementById('historyGrid');
         const clearBtn = document.getElementById('clearBtn');
+        const titleText = document.getElementById('titleText');
+        const rangeLabel = document.getElementById('rangeLabel');
+        const historyTitle = document.getElementById('historyTitle');
+
+        const translations = {
+            en: {
+                title: '🎉 Lucky Draw 🎉',
+                range: 'Range:',
+                draw: 'Start Draw',
+                history: 'Drawn Numbers',
+                clear: 'Clear History',
+                loading: 'Drawing...',
+                invalidRange: 'Please enter a valid number range!',
+                allDrawn: 'All numbers are drawn! Please clear history or adjust the range.',
+                confirmClear: 'Are you sure you want to clear all history?'
+            },
+            'zh-TW': {
+                title: '🎉 隨機抽獎 🎉',
+                range: '範圍：',
+                draw: '開始抽獎',
+                history: '已抽出的數字',
+                clear: '清除記錄',
+                loading: '抽獎中...',
+                invalidRange: '請輸入有效的數字範圍！',
+                allDrawn: '所有數字都已抽完！請清除記錄或調整範圍。',
+                confirmClear: '確定要清除所有記錄嗎？'
+            },
+            'ja-JP': {
+                title: '🎉 抽選ルーレット 🎉',
+                range: '範囲：',
+                draw: '抽選開始',
+                history: '抽選済みの数字',
+                clear: '履歴をクリア',
+                loading: '抽選中...',
+                invalidRange: '有効な数値範囲を入力してください！',
+                allDrawn: 'すべての数字が抽選済みです！履歴をクリアするか範囲を調整してください。',
+                confirmClear: 'すべての履歴をクリアしますか？'
+            }
+        };
+
+        const locale = resolveLocale(navigator.languages || [navigator.language || 'en']);
+        const i18n = translations[locale];
+        applyTranslations(i18n, locale);
 
         drawBtn.addEventListener('click', startDraw);
         clearBtn.addEventListener('click', clearHistory);
@@ -250,7 +293,7 @@
             const max = parseInt(maxNumInput.value);
 
             if (isNaN(min) || isNaN(max) || min > max) {
-                alert('請輸入有效的數字範圍！');
+                alert(i18n.invalidRange);
                 return;
             }
 
@@ -262,29 +305,29 @@
             }
 
             if (availableNumbers.length === 0) {
-                alert('所有數字都已抽完！請清除記錄或調整範圍。');
+                alert(i18n.allDrawn);
                 return;
             }
 
             drawBtn.disabled = true;
-            
+
             resultDisplay.innerHTML = `
                 <div class="loading-content">
                     <div class="spinner"></div>
-                    <div class="loading-text">抽獎中...</div>
+                    <div class="loading-text">${i18n.loading}</div>
                 </div>
             `;
 
             setTimeout(() => {
                 const randomIndex = Math.floor(Math.random() * availableNumbers.length);
                 const drawnNumber = availableNumbers[randomIndex];
-                
+
                 drawnNumbers.push(drawnNumber);
-                
+
                 resultDisplay.innerHTML = `<div class="result-number">${drawnNumber}</div>`;
-                
+
                 addToHistory(drawnNumber);
-                
+
                 drawBtn.disabled = false;
             }, 2000);
         }
@@ -301,11 +344,47 @@
                 return;
             }
 
-            if (confirm('確定要清除所有記錄嗎？')) {
+            if (confirm(i18n.confirmClear)) {
                 drawnNumbers = [];
                 historyGrid.innerHTML = '';
                 resultDisplay.innerHTML = '';
             }
+        }
+
+        function resolveLocale(preferredLocales) {
+            const normalized = preferredLocales
+                .map((locale) => (locale || '').trim())
+                .filter(Boolean);
+
+            for (const locale of normalized) {
+                if (locale === 'zh-TW') {
+                    return 'zh-TW';
+                }
+                if (locale === 'ja-JP') {
+                    return 'ja-JP';
+                }
+                if (locale.startsWith('zh')) {
+                    return 'zh-TW';
+                }
+                if (locale.startsWith('ja')) {
+                    return 'ja-JP';
+                }
+                if (locale.startsWith('en')) {
+                    return 'en';
+                }
+            }
+
+            return 'en';
+        }
+
+        function applyTranslations(texts, localeValue) {
+            document.documentElement.lang = localeValue;
+            document.title = texts.title;
+            titleText.textContent = texts.title;
+            rangeLabel.textContent = texts.range;
+            drawBtn.textContent = texts.draw;
+            historyTitle.textContent = texts.history;
+            clearBtn.textContent = texts.clear;
         }
     </script>
 </body>
